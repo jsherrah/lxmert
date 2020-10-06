@@ -737,7 +737,7 @@ class BertPreTrainedModel(nn.Module):
         except EnvironmentError:
             if pretrained_model_name_or_path == 'bert-base-uncased':
                 try:
-                    print("The BERT-weight-downloading query to AWS was time-out;" 
+                    print("The BERT-weight-downloading query to AWS was time-out;"
                           "trying to download from UNC servers")
                     archive_file = "https://nlp.cs.unc.edu/data/bert/bert-base-uncased.tar.gz"
                     resolved_archive_file = cached_path(archive_file, cache_dir=cache_dir)
@@ -873,7 +873,12 @@ class LXRTModel(BertPreTrainedModel):
             extended_visual_attention_mask = None
 
         # Positional Word Embeddings
-        embedding_output = self.embeddings(input_ids, token_type_ids)
+        # JRS: first iteration its ids, after that already an embedding
+        if input_ids.ndim == 2:
+            embedding_output = self.embeddings(input_ids, token_type_ids)
+        else:
+            assert input_ids.ndim == 3
+            embedding_output = input_ids
 
         # Run LXRT backbone
         lang_feats, visn_feats = self.encoder(
@@ -977,7 +982,7 @@ class LXRTPretraining(BertPreTrainedModel):
             answer_loss = loss_fct(
                 answer_score.view(-1, self.num_answers),
                 ans.view(-1)
-            )  
+            )
             # Since this Github version pre-trains with QA loss from the beginning,
             # I exclude "*2" here to match the effect of QA losses.
             # Previous: (loss *0) for 6 epochs, (loss *2) for 6 epochs.   (Used 10 instead of 6 in EMNLP paper)
@@ -1015,4 +1020,3 @@ class LXRTFeatureExtraction(BertPreTrainedModel):
             return feat_seq, pooled_output
         elif 'l' in self.mode or 'r' in self.mode:
             return feat_seq
-

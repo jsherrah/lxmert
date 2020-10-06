@@ -14,6 +14,9 @@ from pretrain.qa_answer_table import load_lxmert_qa
 from tasks.vqa_model import VQAModel
 from tasks.vqa_data import VQADataset, VQATorchDataset, VQAEvaluator
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 DataTuple = collections.namedtuple("DataTuple", 'dataset loader evaluator')
 
 
@@ -43,7 +46,7 @@ class VQA:
             )
         else:
             self.valid_tuple = None
-        
+
         # Model
         self.model = VQAModel(self.train_tuple.dataset.num_answers)
 
@@ -53,7 +56,7 @@ class VQA:
         if args.load_lxmert_qa is not None:
             load_lxmert_qa(args.load_lxmert_qa, self.model,
                            label2ans=self.train_tuple.dataset.label2ans)
-        
+
         # GPU options
         self.model = self.model.cuda()
         if args.multiGPU:
@@ -72,7 +75,7 @@ class VQA:
                                   t_total=t_total)
         else:
             self.optim = args.optimizer(self.model.parameters(), args.lr)
-        
+
         # Output Directory
         self.output = args.output
         os.makedirs(self.output, exist_ok=True)
@@ -140,6 +143,15 @@ class VQA:
                 feats, boxes = feats.cuda(), boxes.cuda()
                 logit = self.model(feats, boxes, sent)
                 score, label = logit.max(1)
+                # JRS
+                scoreNorm = torch.nn.Softmax()(score).cpu()
+                print('score = {}'.format(scoreNorm.max()))
+                if 0:
+                    plt.ion()
+                    plt.figure(1)
+                    plt.clf()
+                    plt.bar(np.arange(len(scoreNorm)), scoreNorm)
+                    plt.waitforbuttonpress()
                 for qid, l in zip(ques_id, label.cpu().numpy()):
                     ans = dset.label2ans[l]
                     quesid2ans[qid.item()] = ans
@@ -174,6 +186,8 @@ class VQA:
 
 
 if __name__ == "__main__":
+    # JRS
+    torch.autograd.set_detect_anomaly(True)
     # Build Class
     vqa = VQA()
 
@@ -191,7 +205,7 @@ if __name__ == "__main__":
                                shuffle=False, drop_last=False),
                 dump=os.path.join(args.output, 'test_predict.json')
             )
-        elif 'val' in args.test:    
+        elif 'val' in args.test:
             # Since part of valididation data are used in pre-training/fine-tuning,
             # only validate on the minival set.
             result = vqa.evaluate(
@@ -210,5 +224,3 @@ if __name__ == "__main__":
         else:
             print("DO NOT USE VALIDATION")
         vqa.train(vqa.train_tuple, vqa.valid_tuple)
-
-
