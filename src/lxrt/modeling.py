@@ -548,7 +548,17 @@ class LXRTEncoder(nn.Module):
         # Run visual embedding layer
         # Note: Word embedding layer was executed outside this module.
         #       Keep this design to allow loading BERT weights.
-        visn_feats = self.visn_fc(visn_feats)
+        #print('visn_feats = {} {}'.format(type(visn_feats), len(visn_feats)))
+        #print('visn_feats shape pre = {}'.format(visn_feats[0].shape))
+        # JRS: this converts from 2048 down to 768.  Curious why you need to....
+        # So, after first iteration we don't need to do this.
+        if visn_feats[0].shape[-1] == 2048:
+            visn_feats = self.visn_fc(visn_feats)
+        else:
+            #print('LXRTEncoder::forward: not down-coding visual features')
+            visn_feats = visn_feats[0]
+        #print('visn_feats shape post = {}'.format(visn_feats[0].shape))
+        assert visn_feats.shape[-1] == 768
 
         # Run language layers
         for layer_module in self.layer:

@@ -69,23 +69,23 @@ class VQAModel(nn.Module):
                                     visual_feats=(feat, pos),
                                     visual_attention_mask=None)
                 lang_feats, visn_feats = ftrTuple
-                print('input_ids shape = {}, feat shape = {}, visn_feats = {}, lang_feats = {}'.format(\
-                       input_ids.shape, feat.shape, visn_feats.shape, lang_feats.shape))
+                #print('input_ids shape = {}, feat shape = {}, visn_feats = {}, lang_feats = {}'.format(\
+                #       input_ids.shape, feat.shape, visn_feats.shape, lang_feats.shape))
                 logit = self.logit_fc(output)
                 smax = nn.Softmax(dim=-1)(logit)
                 # Find top two values of output for each example.
                 topVals = torch.topk(smax, 2).values
-                print('topVals = {}'.format(topVals))
+                #print('topVals = {}'.format(topVals))
                 # If the largest is big by a long way, then we don't need to keep going.
                 if topVals[0,1] < topVals[0,0]*0.5:
                     break
                 # Prepare for next iteration.  Output vision and language vectors become subsequent inputs.
-                #feat[:,:,:768] = visn_feats  #!!!! hacky!
+                feat = visn_feats # after this, internally the downscale layer not invoked
                 # The way this works is: later on if input_ids is 2-dim then it embeds it, otherwise treats it
                 # as an embedding.
                 input_ids = lang_feats
 
-            print('VQAModel::forward: iters = {}/{}'.format(count, maxIters))
+            #print('VQAModel::forward: iters = {}/{}'.format(count, maxIters))
 
 
         return logit

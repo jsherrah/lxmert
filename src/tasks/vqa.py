@@ -41,7 +41,7 @@ class VQA:
         )
         if args.valid != "":
             self.valid_tuple = get_data_tuple(
-                args.valid, bs=1024,
+                args.valid, bs=1, #!! 1024,
                 shuffle=False, drop_last=False
             )
         else:
@@ -145,7 +145,7 @@ class VQA:
                 score, label = logit.max(1)
                 # JRS
                 scoreNorm = torch.nn.Softmax()(score).cpu()
-                print('score = {}'.format(scoreNorm.max()))
+                #print('score = {}'.format(scoreNorm.max()))
                 if 0:
                     plt.ion()
                     plt.figure(1)
